@@ -1,0 +1,17 @@
+Ollama:
+  Host: "http://localhost:11434"
+  Model: "deepseek-r1:7b"
+  Stream: false
+
+CodeCheck:
+  CheckDay: -1 # -1:yesterday
+  ProjectPath: "C:\\Users\\Meepo\\Desktop\\test"
+  RepoURL: "https://desktop-ljl2un9/svn/test/"
+  UserName: "test"
+  Password: "test"
+  DiffDir: "."
+  CodeCheckFormat:
+    file: "string"
+    line: "string"
+    bug: "string"
+  Prompt: "你是代码专家，分析下面的代码变更内容，其中代码是否有问题?每个问题请用一百字以内按照格式回答\n\n以下是代码变更内容:\n{{.Content}}"
