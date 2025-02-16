@@ -178,15 +178,17 @@ func (ct *CodeCheckTask) prepare() {
 
 func (ct *CodeCheckTask) BuildRequestPayload(oc *Ollama.OllamaClient) *Ollama.RequestPayload {
 	payload := oc.GetRequestPayload()
-	payload.Format.Type = "object"
-	for key, value := range ct.Format {
-		s, ok := value.(string)
-		if !ok {
-			log.Printf("failed to convert value to string, key:%s", key)
+	if len(ct.Format) != 0 {
+		payload.Format.Type = "object"
+		for key, value := range ct.Format {
+			s, ok := value.(string)
+			if !ok {
+				log.Printf("failed to convert value to string, key:%s", key)
+			}
+			field := Ollama.FormatField{Type: s}
+			payload.Format.Properties[key] = field
+			payload.Format.Required = append(payload.Format.Required, key)
 		}
-		field := Ollama.FormatField{Type: s}
-		payload.Format.Properties[key] = field
-		payload.Format.Required = append(payload.Format.Required, key)
 	}
 	return payload
 }
@@ -194,60 +196,38 @@ func (ct *CodeCheckTask) BuildRequestPayload(oc *Ollama.OllamaClient) *Ollama.Re
 func (ct *CodeCheckTask) Do(oc *Ollama.OllamaClient) {
 	ct.prepare()
 
-	var wg sync.WaitGroup
-	resultChan := make(chan string, len(ct.diffFiles))
-	errorChan := make(chan error, len(ct.diffFiles))
-
 	payload := ct.BuildRequestPayload(oc)
 	for _, file := range ct.diffFiles {
-		wg.Add(1)
+		content, err := os.ReadFile(file)
+		if err != nil {
+			fmt.Printf("failed to read file, file:%s, err:%v", file, err)
+			return
+		}
 
-		go func(f string) {
-			defer wg.Done()
-			content, err := os.ReadFile(f)
-			if err != nil {
-				errorChan <- fmt.Errorf("failed to read file %s: %w", f, err)
-				return
+		filePayload := *payload
+		data := Ollama.TemplateData{
+			Content: string(content),
+		}
+
+		filePayload.Prompt, err = Ollama.RenderPrompt(ct.Prompt, data)
+		if err != nil {
+			fmt.Printf("failed to render, file:%s, err:%v", file, err)
+			return
+		}
+
+		respChan, errChan := oc.Generate(&filePayload)
+		select {
+		case resp := <-respChan:
+			if resp.Done {
+				fmt.Printf("code check success, file:%s,resp:%s", file, resp.Response)
+				break
+			} else {
+				fmt.Printf("code check failed, file:%s", file)
+				break
 			}
-
-			filePayload := *payload
-			data := Ollama.TemplateData{
-				Content: string(content),
-			}
-
-			renderedPrompt, err := Ollama.RenderPrompt(ct.Prompt, data)
-			if err != nil {
-				errorChan <- fmt.Errorf("render failed for %s: %w", f, err)
-				return
-			}
-			filePayload.Prompt = renderedPrompt
-			respChan, errChan := oc.Generate(&filePayload)
-			select {
-			case resp := <-respChan:
-				if resp.Done {
-					resultChan <- fmt.Sprintf("code check success, file:%s,resp:%s", f, resp.Response)
-				} else {
-					errorChan <- fmt.Errorf("code check timeout, file:%s", f)
-				}
-			case err := <-errChan:
-				errorChan <- fmt.Errorf("failed to request, file:%s,err:%s", f, err)
-			case <-time.After(60 * time.Second):
-				errorChan <- fmt.Errorf("failed to request, timeout, file:%s", f)
-			}
-		}(file)
-	}
-
-	go func() {
-		wg.Wait()
-		close(resultChan)
-		close(errorChan)
-	}()
-
-	for result := range resultChan {
-		log.Println(result)
-	}
-
-	for err := range errorChan {
-		log.Printf("err: %v", err)
+		case err := <-errChan:
+			fmt.Printf("failed to request, file:%s,err:%s", file, err)
+			break
+		}
 	}
 }

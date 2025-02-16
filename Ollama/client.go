@@ -6,7 +6,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
+	"os"
 	"time"
 )
 
@@ -28,12 +30,15 @@ func (oc *OllamaClient) GetRequestPayload() *RequestPayload {
 		Model:  oc.option.Model,
 		Stream: oc.option.Stream,
 		Format: FormatSpec{
+			Type:       "object",
 			Properties: make(map[string]FormatField),
 			Required:   make([]string, 0),
 		},
 	}
 	return payload
 }
+
+var TestNum int
 
 func (oc *OllamaClient) Generate(payload *RequestPayload) (<-chan ApiResponse, <-chan error) {
 	respChan := make(chan ApiResponse)
@@ -42,32 +47,38 @@ func (oc *OllamaClient) Generate(payload *RequestPayload) (<-chan ApiResponse, <
 	go func() {
 		payloadBytes, err := json.Marshal(payload)
 		if err != nil {
-			errChan <- fmt.Errorf("failed to marshal payload to json, err:%v", err)
+			errChan <- fmt.Errorf("failed to marshal payload to json, err:%v\n", err)
 			return
 		}
+		TestNum++
+		err = os.WriteFile(fmt.Sprintf("%d-payload.json", TestNum), payloadBytes, 0644)
+		if err != nil {
+			log.Printf("failed to write payload to file, err:%v", err)
+		}
+
 		req, err := http.NewRequest(
 			"POST",
 			fmt.Sprintf("%s/api/generate", oc.option.Host),
 			bytes.NewBuffer(payloadBytes),
 		)
 		if err != nil {
-			errChan <- fmt.Errorf("failed to create generate request, err:%v", err)
+			errChan <- fmt.Errorf("failed to create generate request, err:%v\n", err)
 		}
 		req.Header.Set("Content-Type", "application/json")
 		resp, err := oc.client.Do(req)
 		if err != nil {
-			errChan <- fmt.Errorf("failed to send generate request, err:%v", err)
+			errChan <- fmt.Errorf("failed to send generate request, err:%v\n", err)
 			return
 		}
 		defer resp.Body.Close()
 		if resp.StatusCode != http.StatusOK {
 			respBody, _ := io.ReadAll(resp.Body)
-			errChan <- fmt.Errorf("failed to get ok status when generating, err:%v, resp:%v", err, respBody)
+			errChan <- fmt.Errorf("failed to get ok status when generating, err:%v, resp:%s\n", err, string(respBody))
 			return
 		}
 		var apiResp ApiResponse
 		if err := json.NewDecoder(resp.Body).Decode(&apiResp); err != nil {
-			errChan <- fmt.Errorf("failed to decode response, err:%v", err)
+			errChan <- fmt.Errorf("failed to decode response, err:%v\n", err)
 		}
 		respChan <- apiResp
 	}()
