@@ -29,11 +29,6 @@ func (oc *OllamaClient) GetRequestPayload() *RequestPayload {
 	payload := &RequestPayload{
 		Model:  oc.option.Model,
 		Stream: oc.option.Stream,
-		Format: FormatSpec{
-			Type:       "object",
-			Properties: make(map[string]FormatField),
-			Required:   make([]string, 0),
-		},
 	}
 	return payload
 }
@@ -50,6 +45,7 @@ func (oc *OllamaClient) Generate(payload *RequestPayload) (<-chan ApiResponse, <
 			errChan <- fmt.Errorf("failed to marshal payload to json, err:%v\n", err)
 			return
 		}
+
 		TestNum++
 		err = os.WriteFile(fmt.Sprintf("%d-payload.json", TestNum), payloadBytes, 0644)
 		if err != nil {
@@ -61,6 +57,7 @@ func (oc *OllamaClient) Generate(payload *RequestPayload) (<-chan ApiResponse, <
 			fmt.Sprintf("%s/api/generate", oc.option.Host),
 			bytes.NewBuffer(payloadBytes),
 		)
+
 		if err != nil {
 			errChan <- fmt.Errorf("failed to create generate request, err:%v\n", err)
 		}

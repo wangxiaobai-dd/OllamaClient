@@ -10,6 +10,7 @@ import (
 	"log"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"sync"
@@ -176,10 +177,26 @@ func (ct *CodeCheckTask) prepare() {
 	log.Println("diff files", ct.diffFiles)
 }
 
+func (ct *CodeCheckTask) writeRespToFile(file, response string) {
+	fileName := filepath.Base(file)
+	baseName := strings.TrimSuffix(fileName, filepath.Ext(fileName))
+	outFile := baseName + "_analysis.txt"
+	f, err := os.Create(outFile)
+	if err != nil {
+		log.Printf("failed to create file, err:%v", err)
+	}
+	defer f.Close()
+	if _, err := f.WriteString(response); err != nil {
+		log.Printf("failed to write to file, err:%v", err)
+	}
+}
+
 func (ct *CodeCheckTask) BuildRequestPayload(oc *Ollama.OllamaClient) *Ollama.RequestPayload {
 	payload := oc.GetRequestPayload()
 	if len(ct.Format) != 0 {
-		payload.Format.Type = "object"
+		payload.Format = &Ollama.FormatSpec{
+			Type: "object",
+		}
 		for key, value := range ct.Format {
 			s, ok := value.(string)
 			if !ok {
@@ -219,14 +236,15 @@ func (ct *CodeCheckTask) Do(oc *Ollama.OllamaClient) {
 		select {
 		case resp := <-respChan:
 			if resp.Done {
-				fmt.Printf("code check success, file:%s,resp:%s", file, resp.Response)
+				ct.writeRespToFile(file, resp.Response)
+				fmt.Printf("code check success, file:%s\n", file)
 				break
 			} else {
-				fmt.Printf("code check failed, file:%s", file)
+				fmt.Printf("code check failed, file:%s\n", file)
 				break
 			}
 		case err := <-errChan:
-			fmt.Printf("failed to request, file:%s,err:%s", file, err)
+			fmt.Printf("failed to request, file:%s,err:%s\n", file, err)
 			break
 		}
 	}

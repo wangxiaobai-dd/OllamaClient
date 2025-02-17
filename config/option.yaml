@@ -10,8 +10,8 @@ CodeCheck:
   UserName: "test"
   Password: "test"
   DiffDir: "."
-  CodeCheckFormat:
-    file: "string"
-    line: "string"
-    bug: "string"
+#  CodeCheckFormat:
+#    file: "string"
+#    line: "string"
+#    bug: "string"
   Prompt: "你是代码专家，请分析下面的代码变更内容。请严格按照以下要求回答：1. 检查所有代码变更行是否存在问题 2. 每个问题必须包含以下字段：- file: 出现问题的文件路径 - line: 代码行号（格式如: 42 或 10-15）- bug: 问题描述（100字内） \n\n以下是代码变更内容:\n{{.Content}}"

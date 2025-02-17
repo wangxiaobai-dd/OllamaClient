@@ -1,10 +1,10 @@
 package Ollama
 
 type RequestPayload struct {
-	Model  string     `json:"model"`
-	Prompt string     `json:"prompt"`
-	Stream bool       `json:"stream"`
-	Format FormatSpec `json:"format"`
+	Model  string      `json:"model"`
+	Prompt string      `json:"prompt"`
+	Stream bool        `json:"stream"`
+	Format *FormatSpec `json:"format,omitempty"`
 }
 
 type FormatSpec struct {
@@ -22,7 +22,7 @@ type ApiResponse struct {
 	Done     bool   `json:"done"`
 }
 
-type codeCheckResult struct {
+type CodeCheckResult struct {
 	File string `json:"file"`
 	Line string `json:"line"`
 	Bug  string `json:"bug"`
