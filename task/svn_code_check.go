@@ -1,4 +1,4 @@
-package Task
+package task
 
 import (
 	"bufio"
@@ -19,13 +19,13 @@ import (
 )
 
 type CodeCheckTask struct {
-	*Option.CodeCheckOption
+	*option.CodeCheckOption
 	diffMu    sync.Mutex
 	diffFiles []string
 	result    []string
 }
 
-func NewCodeCheckTask(option *Option.CodeCheckOption) *CodeCheckTask {
+func NewCodeCheckTask(option *option.CodeCheckOption) *CodeCheckTask {
 	return &CodeCheckTask{CodeCheckOption: option}
 }
 
@@ -185,7 +185,7 @@ func (ct *CodeCheckTask) prepare() {
 func (ct *CodeCheckTask) writeRespToFile(file, response string) {
 	fileName := filepath.Base(file)
 	baseName := strings.TrimSuffix(fileName, filepath.Ext(fileName))
-	outFile := baseName + "_analysis.txt"
+	outFile := baseName + "_analysis.json"
 	f, err := os.Create(outFile)
 	if err != nil {
 		log.Printf("failed to create file, err:%v", err)
@@ -196,20 +196,20 @@ func (ct *CodeCheckTask) writeRespToFile(file, response string) {
 	}
 }
 
-func (ct *CodeCheckTask) BuildRequestPayload(oc *Ollama.OllamaClient) *Ollama.RequestPayload {
+func (ct *CodeCheckTask) BuildRequestPayload(oc *ollama.OllamaClient) *ollama.RequestPayload {
 	payload := oc.GetRequestPayload()
 	if len(ct.Format) != 0 {
-		payload.Format = &Ollama.FormatSpec{
+		payload.Format = &ollama.FormatSpec{
 			Type:       "object",
-			Properties: map[string]Ollama.FormatField{},
-			Required:   []string{"format"},
+			Properties: map[string]ollama.FormatField{},
+			Required:   []string{},
 		}
 		for key, value := range ct.Format {
 			s, ok := value.(string)
 			if !ok {
 				log.Printf("failed to convert value to string, key:%s", key)
 			}
-			field := Ollama.FormatField{Type: s}
+			field := ollama.FormatField{Type: s}
 			payload.Format.Properties[key] = field
 			payload.Format.Required = append(payload.Format.Required, key)
 		}
@@ -217,7 +217,7 @@ func (ct *CodeCheckTask) BuildRequestPayload(oc *Ollama.OllamaClient) *Ollama.Re
 	return payload
 }
 
-func (ct *CodeCheckTask) Do(oc *Ollama.OllamaClient) {
+func (ct *CodeCheckTask) Do(oc *ollama.OllamaClient) {
 	ct.prepare()
 
 	payload := ct.BuildRequestPayload(oc)
@@ -227,32 +227,21 @@ func (ct *CodeCheckTask) Do(oc *Ollama.OllamaClient) {
 			fmt.Printf("failed to read file, file:%s, err:%v", file, err)
 			return
 		}
-
 		filePayload := *payload
-		data := Ollama.TemplateData{
+		data := ollama.TemplateData{
 			Content: string(content),
 		}
-
-		filePayload.Prompt, err = Ollama.RenderPrompt(ct.Prompt, data)
+		filePayload.Prompt, err = ollama.RenderPrompt(ct.Prompt, data)
 		if err != nil {
 			fmt.Printf("failed to render, file:%s, err:%v", file, err)
 			return
 		}
-
-		respChan, errChan := oc.Generate(&filePayload)
-		select {
-		case resp := <-respChan:
-			if resp.Done {
-				ct.writeRespToFile(file, resp.Response)
-				fmt.Printf("code check success, file:%s\n", file)
-				break
-			} else {
-				fmt.Printf("code check failed, file:%s\n", file)
-				break
-			}
-		case err := <-errChan:
-			fmt.Printf("failed to request, file:%s,err:%s\n", file, err)
-			break
+		response, err := oc.Generate(&filePayload)
+		if err != nil {
+			fmt.Printf("code check failed, file:%s,err:%v\n", file, err)
+		} else {
+			ct.writeRespToFile(file, response)
+			fmt.Printf("code check success, file:%s\n", file)
 		}
 	}
 }

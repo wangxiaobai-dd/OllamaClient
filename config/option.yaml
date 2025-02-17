@@ -4,42 +4,27 @@ Ollama:
   Stream: false
 
 CodeCheck:
-  CheckDay: 1 # -1:yesterday 1:today
-  ProjectPath: "D:\\testollama"
-  RepoURL: "http://zt-c600540.ztgame.com/svn/testollama/"
+  CheckDay: -2 # -1:yesterday 1:today
+  #ProjectPath: "D:\\testollama"
+  #RepoURL: "http://zt-c600540.ztgame.com/svn/testollama/"
+  ProjectPath: "C:\\Users\\Meepo\\Desktop\\test"
+  RepoURL: "https://desktop-ljl2un9/svn/test/"
   UserName: "test"
   Password: "test"
   DiffDir: "."
-  CodeCheckFormat:
-    file: "string"
-    code: "string"
-    reason: "string"
-    fix: "string"
+#  CodeCheckFormat: #return json response, just one issue
+#    file: "string"
+#    code: "string"
+#    reason: "string"
+#    fix: "string"
   Prompt:
-    "请分析代码变更，严格按以下格式返回问题条目，json值为中文，只分析C++代码，不要包含分析过程或其他内容：
-     **file**：<文件完整路径>
-     **code**：
-     ```cpp
-     <出错的代码片段>
-     ```
-     **reason**：<简明扼要说明问题本质，单行50字>
-     **fix**：
-     ```cpp
-     <修改后的正确代码>
-     ---
-     **示例**：
-     file：main.cpp
-     code：
-     ```cpp
-     std::cout << \"error: invalid input\" << std::endl;
-     ```
-     reason：直接输出到控制台不利调试和日志管理
-     fix：
-     ```cpp
-     logger.error(\"Invalid input detected\");
-      ```
-     ---
+    "请分析代码变更，只分析C++代码，使用json回答。
+
+     file: 代码文件名，从代码变更的Index: 后寻找
+     code: 有问题的代码片段
+     reason: 为什么有问题
+     fix: 修改建议
+     如果有多个问题，用多个json对象返回。
+
      当前需分析的代码变更：
-     ```diff
-     {{.Content}}
-     ```"
+     {{.Content}}"

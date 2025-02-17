@@ -1,4 +1,4 @@
-package Option
+package option
 
 import (
 	"gopkg.in/yaml.v2"

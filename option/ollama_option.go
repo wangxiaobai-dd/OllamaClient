@@ -1,4 +1,4 @@
-package Option
+package option
 
 type OllamaOption struct {
 	Host   string `yaml:"Host"`

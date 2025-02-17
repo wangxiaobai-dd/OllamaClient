@@ -1,4 +1,4 @@
-package Option
+package option
 
 type CodeCheckOption struct {
 	CheckDay    int                    `yaml:"CheckDay"`

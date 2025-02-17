@@ -1,4 +1,4 @@
-package Ollama
+package ollama
 
 import (
 	"bytes"

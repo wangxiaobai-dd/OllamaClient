@@ -1,4 +1,4 @@
-package Ollama
+package ollama
 
 type RequestPayload struct {
 	Model  string      `json:"model"`
