@@ -1,7 +1,6 @@
 package Ollama
 
 import (
-	"OllamaChat/Option"
 	"bytes"
 	"encoding/json"
 	"fmt"
@@ -10,6 +9,8 @@ import (
 	"net/http"
 	"os"
 	"time"
+
+	"OllamaChat/Option"
 )
 
 type OllamaClient struct {
@@ -47,8 +48,8 @@ func (oc *OllamaClient) Generate(payload *RequestPayload) (<-chan ApiResponse, <
 		}
 
 		TestNum++
-		err = os.WriteFile(fmt.Sprintf("%d-payload.json", TestNum), payloadBytes, 0644)
-		if err != nil {
+		f, err := os.Create(fmt.Sprintf("%d-payload.json", TestNum))
+		if _, err := f.Write(payloadBytes); err != nil {
 			log.Printf("failed to write payload to file, err:%v", err)
 		}
 

@@ -4,14 +4,42 @@ Ollama:
   Stream: false
 
 CodeCheck:
-  CheckDay: -1 # -1:yesterday
-  ProjectPath: "C:\\Users\\Meepo\\Desktop\\test"
-  RepoURL: "https://desktop-ljl2un9/svn/test/"
+  CheckDay: 1 # -1:yesterday 1:today
+  ProjectPath: "D:\\testollama"
+  RepoURL: "http://zt-c600540.ztgame.com/svn/testollama/"
   UserName: "test"
   Password: "test"
   DiffDir: "."
-#  CodeCheckFormat:
-#    file: "string"
-#    line: "string"
-#    bug: "string"
-  Prompt: "你是代码专家，请分析下面的代码变更内容。请严格按照以下要求回答：1. 检查所有代码变更行是否存在问题 2. 每个问题必须包含以下字段：- file: 出现问题的文件路径 - line: 代码行号（格式如: 42 或 10-15）- bug: 问题描述（100字内） \n\n以下是代码变更内容:\n{{.Content}}"
+  CodeCheckFormat:
+    file: "string"
+    code: "string"
+    reason: "string"
+    fix: "string"
+  Prompt:
+    "请分析代码变更，严格按以下格式返回问题条目，json值为中文，只分析C++代码，不要包含分析过程或其他内容：
+     **file**：<文件完整路径>
+     **code**：
+     ```cpp
+     <出错的代码片段>
+     ```
+     **reason**：<简明扼要说明问题本质，单行50字>
+     **fix**：
+     ```cpp
+     <修改后的正确代码>
+     ---
+     **示例**：
+     file：main.cpp
+     code：
+     ```cpp
+     std::cout << \"error: invalid input\" << std::endl;
+     ```
+     reason：直接输出到控制台不利调试和日志管理
+     fix：
+     ```cpp
+     logger.error(\"Invalid input detected\");
+      ```
+     ---
+     当前需分析的代码变更：
+     ```diff
+     {{.Content}}
+     ```"

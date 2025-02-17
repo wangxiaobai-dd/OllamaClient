@@ -1,8 +1,6 @@
 package Task
 
 import (
-	"OllamaChat/Ollama"
-	"OllamaChat/Option"
 	"bufio"
 	"bytes"
 	"encoding/xml"
@@ -15,6 +13,9 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"OllamaChat/Ollama"
+	"OllamaChat/Option"
 )
 
 type CodeCheckTask struct {
@@ -91,13 +92,17 @@ func (ct *CodeCheckTask) updateCode() (string, error) {
 }
 
 func (ct *CodeCheckTask) getRevisions() ([]string, string, error) {
-	now := time.Now()
-	nowDate := now.Format("2006-01-02")
+	end := time.Now()
+	endDate := end.Format("2006-01-02")
 
-	start := now.AddDate(0, 0, ct.CheckDay)
+	start := end.AddDate(0, 0, ct.CheckDay)
 	startDate := start.Format("2006-01-02")
 
-	out, err := ct.execCmd(AddRepoURL, "log", "-r", "{"+startDate+"}:{"+nowDate+"}", "--xml")
+	if ct.CheckDay > 0 {
+		endDate, startDate = startDate, endDate
+	}
+
+	out, err := ct.execCmd(AddRepoURL, "log", "-r", "{"+startDate+"}:{"+endDate+"}", "--xml")
 	if err != nil {
 		return nil, out, err
 	}
@@ -195,7 +200,9 @@ func (ct *CodeCheckTask) BuildRequestPayload(oc *Ollama.OllamaClient) *Ollama.Re
 	payload := oc.GetRequestPayload()
 	if len(ct.Format) != 0 {
 		payload.Format = &Ollama.FormatSpec{
-			Type: "object",
+			Type:       "object",
+			Properties: map[string]Ollama.FormatField{},
+			Required:   []string{"format"},
 		}
 		for key, value := range ct.Format {
 			s, ok := value.(string)
