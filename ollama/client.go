@@ -25,23 +25,18 @@ func NewOllamaClient(option *option.OllamaOption) *OllamaClient {
 	return ollamaClient
 }
 
-func (oc *OllamaClient) GetRequestPayload() *RequestPayload {
-	payload := &RequestPayload{
-		Model:  oc.option.Model,
-		Stream: oc.option.Stream,
-		Options: map[string]interface{}{
-			"temperature": 0.5,
-			//"max_tokens":  8092,
-			//"seed": 1,
-		},
+func (oc *OllamaClient) GetGeneratePayload() *GeneratePayload {
+	payload := &GeneratePayload{
+		Model:   oc.option.Model,
+		Stream:  oc.option.Stream,
+		Options: oc.option.Parameters,
 	}
 	return payload
 }
 
 var TestNum int
 
-func (oc *OllamaClient) Generate(payload *RequestPayload) (string, error) {
-
+func (oc *OllamaClient) Generate(payload *GeneratePayload) (string, error) {
 	payloadBytes, err := json.Marshal(payload)
 	if err != nil {
 		return "", fmt.Errorf("failed to marshal payload to json, err:%v\n", err)
@@ -73,7 +68,7 @@ func (oc *OllamaClient) Generate(payload *RequestPayload) (string, error) {
 		respBody, _ := io.ReadAll(resp.Body)
 		return string(respBody), fmt.Errorf("failed to get ok status when generating, err:%v, resp:%s\n", err, string(respBody))
 	}
-	var apiResp ApiResponse
+	var apiResp GenerateResponse
 	if err := json.NewDecoder(resp.Body).Decode(&apiResp); err != nil {
 		return "", fmt.Errorf("failed to decode response, err:%v\n", err)
 	}

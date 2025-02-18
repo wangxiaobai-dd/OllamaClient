@@ -2,21 +2,59 @@ Ollama:
   Host: "http://localhost:11434"
   Model: "deepseek-r1:7b"
   Stream: false
+  Parameters:
+    temperature: 0.0
+    num_ctx: 6144
+    max_token: 4096
+    seed: 0
+    top_p: 0.5
+    top_k: 30
+    language: "c++"
+    frequency_penalty: 0.2
+    presence_penalty: 0.1
+    stop:
+      - "###"
+      - "\n\n\n"
 
 CodeCheck:
-  CheckDay: 1 # -1:yesterday 1:today
-  ProjectPath: "D:\\testollama"
-  RepoURL: "http://zt-c600540.ztgame.com/svn/testollama/"
-  #ProjectPath: "C:\\Users\\Meepo\\Desktop\\test"
-  #RepoURL: "https://desktop-ljl2un9/svn/test/"
+  CheckDay: -3 # -1:yesterday 1:today
+  #ProjectPath: "D:\\testollama"
+  #RepoURL: "http://zt-c600540.ztgame.com/svn/testollama/"
+  ProjectPath: "C:\\Users\\Meepo\\Desktop\\test"
+  RepoURL: "https://desktop-ljl2un9/svn/test/"
   UserName: "test"
   Password: "test"
   DiffDir: "."
 
   Prompt: |
-    "请你帮我检查代码变更，只分析C++代码，指出其中问题且给出修改意见，使用中文输出，无需总结：
-  
-    需要检查的diff内容：
+    "你是一个资深C++代码审查专家，请严格按照以下格式要求分析代码变更：
+
+    ### 格式要求 ###
+    1. 仅分析.cpp/.h/.hpp文件，忽略配置
+    2. 按文件逐个分析
+    3. 每个文件按如下结构输出：
+    [文件名] <实际文件名>
+    [问题代码] 
+    > 用箭头标注具体行号
+    [修改建议]
+    > 给出具体修改方案
+
+    ### 注意事项 ###
+    - 必须使用中文
+    - 不要解释格式
+    - 不要添加总结段落
+    - 禁止使用markdown格式
+    - 每个文件分析之间用空行分隔
+
+    需要审查的diff内容：
     ```diff
     {{.Content}}
     ```"
+
+
+#高严格性审查（安全关键代码）:
+#  {"temperature": 0.0, "top_k": 30, "frequency_penalty": 0.5}
+#探索性审查（寻找潜在优化点）:
+#  {"temperature": 0.3, "top_p": 0.9, "presence_penalty": 0.5}
+#超长diff处理（>4096 tokens）:
+#  {"num_ctx": 6144, "max_tokens": 4096}  # 需确认模型版本支持

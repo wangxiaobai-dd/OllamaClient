@@ -1,7 +1,7 @@
 package task
 
 import (
-	"bufio"
+	"OllamaChat/util"
 	"bytes"
 	"encoding/xml"
 	"fmt"
@@ -115,33 +115,16 @@ func (ct *CodeCheckTask) getPrevRevision(revision string) string {
 	return strconv.Itoa(curRev - 1)
 }
 
-func (ct *CodeCheckTask) writeDiffToFile(diffContent, revision string) {
+func (ct *CodeCheckTask) getDiffFileName(revision string) string {
 	fileName := fmt.Sprintf("%s/%s.diff", ct.DiffDir, revision)
-	outFile, err := os.Create(fileName)
-	defer outFile.Close()
-	if err != nil {
-		log.Printf("failed to create file, err:%v", err)
-		return
-	}
-	writer := bufio.NewWriter(outFile)
-	scanner := bufio.NewScanner(strings.NewReader(diffContent))
-	for scanner.Scan() {
-		_, err := writer.WriteString(scanner.Text() + "\n")
-		if err != nil {
-			log.Printf("failed to write to file:%s, err: %v", fileName, err)
-			continue
-		}
-	}
-	if err := scanner.Err(); err != nil {
-		log.Printf("error while reading diff, file:%s, err:%v", fileName, err)
-	}
-	err = writer.Flush()
-	if err != nil {
-		log.Printf("failed to flush writer, file:%s, err:%v", fileName, err)
-	}
-	ct.diffMu.Lock()
-	ct.diffFiles = append(ct.diffFiles, fileName)
-	ct.diffMu.Unlock()
+	return fileName
+}
+
+func (ct *CodeCheckTask) getResultFileName(diffFile string) string {
+	fileName := filepath.Base(diffFile)
+	baseName := strings.TrimSuffix(fileName, filepath.Ext(fileName))
+	outFile := baseName + "_analysis.text"
+	return outFile
 }
 
 func (ct *CodeCheckTask) generateDiff(revisions []string) {
@@ -155,7 +138,11 @@ func (ct *CodeCheckTask) generateDiff(revisions []string) {
 			wg.Add(1)
 			go func() {
 				defer wg.Done()
-				ct.writeDiffToFile(out, revision)
+				diffFile := ct.getDiffFileName(revision)
+				util.WriteContentToFile(out, diffFile)
+				ct.diffMu.Lock()
+				ct.diffFiles = append(ct.diffFiles, diffFile)
+				ct.diffMu.Unlock()
 			}()
 		}
 	}
@@ -182,24 +169,10 @@ func (ct *CodeCheckTask) prepare() {
 	log.Println("diff files", ct.diffFiles)
 }
 
-func (ct *CodeCheckTask) writeRespToFile(file, response string) {
-	fileName := filepath.Base(file)
-	baseName := strings.TrimSuffix(fileName, filepath.Ext(fileName))
-	outFile := baseName + "_analysis.json"
-	f, err := os.Create(outFile)
-	if err != nil {
-		log.Printf("failed to create file, err:%v", err)
-	}
-	defer f.Close()
-	if _, err := f.WriteString(response); err != nil {
-		log.Printf("failed to write to file, err:%v", err)
-	}
-}
-
 func (ct *CodeCheckTask) Do(oc *ollama.OllamaClient) {
 	ct.prepare()
 
-	payload := oc.GetRequestPayload()
+	payload := oc.GetGeneratePayload()
 	for _, file := range ct.diffFiles {
 		content, err := os.ReadFile(file)
 		if err != nil {
@@ -219,9 +192,9 @@ func (ct *CodeCheckTask) Do(oc *ollama.OllamaClient) {
 		if err != nil {
 			fmt.Printf("code check failed, file:%s,err:%v\n", file, err)
 		} else {
-			ct.writeRespToFile(file, response)
+			resultFile := ct.getResultFileName(file)
+			util.WriteContentToFile(util.ProcessResponse(response), resultFile)
 			fmt.Printf("code check success, file:%s\n", file)
 		}
-		time.Sleep(10)
 	}
 }
