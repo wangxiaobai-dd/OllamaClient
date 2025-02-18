@@ -12,13 +12,13 @@ func init() {
 }
 
 func main() {
-	option, err := option.LoadOption("config/option.yaml")
+	opt, err := option.LoadOption("config/option.yaml")
 	if err != nil {
 		log.Fatal(err)
 	}
-	log.Println(option.Ollama, option.CodeCheck)
+	log.Println(opt.Ollama, opt.CodeCheck)
 
-	client := ollama.NewOllamaClient(option.Ollama)
-	task := task.NewCodeCheckTask(option.CodeCheck)
-	client.Run(task)
+	client := ollama.NewOllamaClient(opt.Ollama)
+	ct := task.NewCodeCheckTask(opt.CodeCheck)
+	client.Run(ct)
 }

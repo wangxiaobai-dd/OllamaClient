@@ -12,19 +12,32 @@ CodeCheck:
   UserName: "test"
   Password: "test"
   DiffDir: "."
-#  CodeCheckFormat: #return json response, just one issue
-#    file: "string"
-#    code: "string"
-#    reason: "string"
-#    fix: "string"
-  Prompt:
-    "请分析代码变更，只分析C++代码，使用json回答。
-
-     file: 代码文件名，从代码变更的Index: 后寻找
-     code: 有问题的代码片段
-     reason: 为什么有问题
-     fix: 修改建议
-     如果有多个问题，用多个json对象返回。
-
-     当前需分析的代码变更：
-     {{.Content}}"
+  Prompt: |
+    # Code Review Assistant
+    You are a senior C++ engineer specializing in code quality analysis.
+    Analyze the provided SVN diff content for C++ code changes and detect potential issues.
+  
+    ## Task Requirements
+    1. 仔细检查每个文件的代码变更差异
+    2. 重点检测以下类型问题：
+    - 内存泄漏/指针错误
+    - 逻辑错误/边界条件
+    - 资源未释放
+    - API误用
+    - 线程安全问题
+    - 代码规范违规
+    - 潜在的性能问题
+    3. 对于每个检测到的问题：
+    - 必须包含变更后的新代码片段
+    - 必须说明具体的检测依据
+    - 必须给出可执行的修改建议
+  
+    ## Output Format
+    {% if problems %}
+    【文件名】: [文件路径]
+    【问题代码】: 
+    【问题原因】: 
+    【修改建议】: 
+    
+    ## SVN Diff
+    {{.Content}}

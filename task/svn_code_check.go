@@ -196,31 +196,10 @@ func (ct *CodeCheckTask) writeRespToFile(file, response string) {
 	}
 }
 
-func (ct *CodeCheckTask) BuildRequestPayload(oc *ollama.OllamaClient) *ollama.RequestPayload {
-	payload := oc.GetRequestPayload()
-	if len(ct.Format) != 0 {
-		payload.Format = &ollama.FormatSpec{
-			Type:       "object",
-			Properties: map[string]ollama.FormatField{},
-			Required:   []string{},
-		}
-		for key, value := range ct.Format {
-			s, ok := value.(string)
-			if !ok {
-				log.Printf("failed to convert value to string, key:%s", key)
-			}
-			field := ollama.FormatField{Type: s}
-			payload.Format.Properties[key] = field
-			payload.Format.Required = append(payload.Format.Required, key)
-		}
-	}
-	return payload
-}
-
 func (ct *CodeCheckTask) Do(oc *ollama.OllamaClient) {
 	ct.prepare()
 
-	payload := ct.BuildRequestPayload(oc)
+	payload := oc.GetRequestPayload()
 	for _, file := range ct.diffFiles {
 		content, err := os.ReadFile(file)
 		if err != nil {
