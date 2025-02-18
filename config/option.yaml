@@ -4,40 +4,19 @@ Ollama:
   Stream: false
 
 CodeCheck:
-  CheckDay: -2 # -1:yesterday 1:today
-  #ProjectPath: "D:\\testollama"
-  #RepoURL: "http://zt-c600540.ztgame.com/svn/testollama/"
-  ProjectPath: "C:\\Users\\Meepo\\Desktop\\test"
-  RepoURL: "https://desktop-ljl2un9/svn/test/"
+  CheckDay: 1 # -1:yesterday 1:today
+  ProjectPath: "D:\\testollama"
+  RepoURL: "http://zt-c600540.ztgame.com/svn/testollama/"
+  #ProjectPath: "C:\\Users\\Meepo\\Desktop\\test"
+  #RepoURL: "https://desktop-ljl2un9/svn/test/"
   UserName: "test"
   Password: "test"
   DiffDir: "."
+
   Prompt: |
-    # Code Review Assistant
-    You are a senior C++ engineer specializing in code quality analysis.
-    Analyze the provided SVN diff content for C++ code changes and detect potential issues.
+    "请你帮我检查代码变更，只分析C++代码，指出其中问题且给出修改意见，使用中文输出，无需总结：
   
-    ## Task Requirements
-    1. 仔细检查每个文件的代码变更差异
-    2. 重点检测以下类型问题：
-    - 内存泄漏/指针错误
-    - 逻辑错误/边界条件
-    - 资源未释放
-    - API误用
-    - 线程安全问题
-    - 代码规范违规
-    - 潜在的性能问题
-    3. 对于每个检测到的问题：
-    - 必须包含变更后的新代码片段
-    - 必须说明具体的检测依据
-    - 必须给出可执行的修改建议
-  
-    ## Output Format
-    {% if problems %}
-    【文件名】: [文件路径]
-    【问题代码】: 
-    【问题原因】: 
-    【修改建议】: 
-    
-    ## SVN Diff
+    需要检查的diff内容：
+    ```diff
     {{.Content}}
+    ```"

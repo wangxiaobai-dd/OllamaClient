@@ -29,6 +29,11 @@ func (oc *OllamaClient) GetRequestPayload() *RequestPayload {
 	payload := &RequestPayload{
 		Model:  oc.option.Model,
 		Stream: oc.option.Stream,
+		Options: map[string]interface{}{
+			"temperature": 0.5,
+			//"max_tokens":  8092,
+			//"seed": 1,
+		},
 	}
 	return payload
 }

@@ -1,10 +1,11 @@
 package ollama
 
 type RequestPayload struct {
-	Model  string      `json:"model"`
-	Prompt string      `json:"prompt"`
-	Stream bool        `json:"stream"`
-	Format *FormatSpec `json:"format,omitempty"`
+	Model   string                 `json:"model"`
+	Prompt  string                 `json:"prompt"`
+	Stream  bool                   `json:"stream"`
+	Options map[string]interface{} `json:"options,omitempty"`
+	Format  *FormatSpec            `json:"format,omitempty"`
 }
 
 type FormatSpec struct {

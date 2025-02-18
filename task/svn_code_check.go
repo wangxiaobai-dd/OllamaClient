@@ -222,5 +222,6 @@ func (ct *CodeCheckTask) Do(oc *ollama.OllamaClient) {
 			ct.writeRespToFile(file, response)
 			fmt.Printf("code check success, file:%s\n", file)
 		}
+		time.Sleep(10)
 	}
 }
