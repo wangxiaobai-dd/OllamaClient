@@ -1,1 +1,1 @@
-与本地部署ollama交互，目前支持svn diff文件检查功能
+使用 ollama api 进行 svn diff 文件检查
