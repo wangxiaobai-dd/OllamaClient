@@ -6,10 +6,8 @@ import (
 	"regexp"
 )
 
-func ProcessResponse(content string) string {
-	result := RemoveThinkTags(content)
-	result = RemoveEmptyLine(result)
-	return result
+func AddContentHeader(header, content string) string {
+	return header + "\n" + content
 }
 
 func RemoveThinkTags(content string) string {

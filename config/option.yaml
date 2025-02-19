@@ -3,7 +3,7 @@ Ollama:
   Model: "deepseek-r1:7b"
   Stream: false
   Parameters:
-    temperature: 0.2
+    temperature: 0
     num_ctx: 10000
     max_token: 8092
     seed: 0
@@ -15,7 +15,7 @@ Ollama:
 
 
 CodeCheck:
-  CheckDay: -4 # -1:yesterday 1:today
+  CheckDay: -3 # -1:yesterday 1:today
   #ProjectPath: "D:\\testollama"
   #RepoURL: "http://zt-c600540.ztgame.com/svn/testollama/"
   ProjectPath: "C:\\Users\\Meepo\\Desktop\\test"
@@ -23,6 +23,8 @@ CodeCheck:
   UserName: "test"
   Password: "test"
   DiffDir: "."
+  OutDir: "D:\\OllamaClient\\output\\"
+  OutPrefix: "ai_result"
 
   Prompt: |
     "
@@ -41,7 +43,7 @@ CodeCheck:
     > 给出具体修改方案
     
     格式示例：
-    [文件名] 文件名
+    [文件名] 解析出的文件名
     [问题代码]
     ```cpp
       有问题的代码
