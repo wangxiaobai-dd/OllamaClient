@@ -3,6 +3,7 @@ package util
 import (
 	"log"
 	"os"
+	"path/filepath"
 	"regexp"
 )
 
@@ -23,6 +24,11 @@ func RemoveEmptyLine(content string) string {
 }
 
 func WriteContentToFile(content, fileName string) {
+	dir := filepath.Dir(fileName)
+	if err := os.MkdirAll(dir, 0755); err != nil {
+		log.Printf("failed to makedir, err:%v", err)
+		return
+	}
 	f, err := os.Create(fileName)
 	if err != nil {
 		log.Printf("failed to create file, err:%v", err)

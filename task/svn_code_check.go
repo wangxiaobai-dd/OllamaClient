@@ -1,7 +1,6 @@
 package task
 
 import (
-	"OllamaChat/util"
 	"bytes"
 	"encoding/xml"
 	"fmt"
@@ -14,15 +13,18 @@ import (
 	"sync"
 	"time"
 
+	"OllamaChat/util"
+
 	"OllamaChat/Ollama"
 	"OllamaChat/Option"
 )
 
 type CodeCheckTask struct {
 	*option.CodeCheckOption
-	diffMu    sync.Mutex
-	diffFiles []string
-	result    []string
+	diffMu       sync.Mutex
+	diffFiles    []string
+	result       []string
+	submitMsgMap map[string]string
 }
 
 func NewCodeCheckTask(option *option.CodeCheckOption) *CodeCheckTask {
@@ -34,6 +36,7 @@ func (ct *CodeCheckTask) initTask() {
 	ct.diffFiles = []string{}
 	ct.diffMu.Unlock()
 	ct.result = []string{}
+	ct.submitMsgMap = map[string]string{}
 }
 
 type ArgsMode int
@@ -66,16 +69,17 @@ func (ct *CodeCheckTask) execCmd(mode ArgsMode, args ...string) (string, error) 
 	return out.String(), err
 }
 
-type Log struct {
+type SvnSubmitLog struct {
 	Entries []LogEntry `xml:"logentry"`
 }
 
 type LogEntry struct {
 	Revision string `xml:"revision,attr"`
+	Msg      string `xml:"msg"`
 }
 
 func (ct *CodeCheckTask) parseSVNLog(xmlData string) ([]string, error) {
-	var logData Log
+	var logData SvnSubmitLog
 	err := xml.Unmarshal([]byte(xmlData), &logData)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse log xml: %v", err)
@@ -83,6 +87,7 @@ func (ct *CodeCheckTask) parseSVNLog(xmlData string) ([]string, error) {
 	var revisions []string
 	for _, entry := range logData.Entries {
 		revisions = append(revisions, entry.Revision)
+		ct.submitMsgMap[entry.Revision] = entry.Msg
 	}
 	return revisions, nil
 }
@@ -137,6 +142,10 @@ func (ct *CodeCheckTask) getRevisionByDiffFile(diffFile string) string {
 	return baseName
 }
 
+func (ct *CodeCheckTask) getSubmitMsgByRevision(revision string) string {
+	return ct.submitMsgMap[revision]
+}
+
 func (ct *CodeCheckTask) generateDiff(revisions []string) {
 	var wg sync.WaitGroup
 	for _, revision := range revisions {
@@ -163,7 +172,9 @@ func (ct *CodeCheckTask) generateDiff(revisions []string) {
 func (ct *CodeCheckTask) processResponse(diffFile, content string) string {
 	result := util.RemoveThinkTags(content)
 	result = util.RemoveEmptyLine(result)
-	result = util.AddContentHeader("REVISION:"+ct.getRevisionByDiffFile(diffFile), result)
+	revision := ct.getRevisionByDiffFile(diffFile)
+	header := "REVISION:" + revision + "\t\t" + ct.getSubmitMsgByRevision(revision)
+	result = util.AddContentHeader(header, result)
 	return result
 }
 
