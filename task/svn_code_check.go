@@ -115,7 +115,12 @@ func (ct *CodeCheckTask) getPrevRevision(revision string) string {
 	return strconv.Itoa(curRev - 1)
 }
 
-// todo merge to one date file
+func (ct *CodeCheckTask) getMergeResultFile() string {
+	date := time.Now().Format("2006-01-02")
+	outfile := ct.OutDir + ct.OutPrefix + "." + date
+	return outfile
+}
+
 func (ct *CodeCheckTask) getResultFileByDiffFile(diffFile string) string {
 	outFile := ct.OutDir + ct.getRevisionByDiffFile(diffFile) + "_analysis.text"
 	return outFile
@@ -190,12 +195,14 @@ func (ct *CodeCheckTask) finish() {
 }
 
 func (ct *CodeCheckTask) exec(oc *ollama.OllamaClient) {
+	resultFile := ct.getMergeResultFile()
+	var result string
 	payload := oc.GetGeneratePayload()
 	for _, diff := range ct.diffFiles {
 		content, err := os.ReadFile(diff)
 		if err != nil {
 			fmt.Printf("failed to read file, diff:%s, err:%v", diff, err)
-			return
+			continue
 		}
 		filePayload := *payload
 		data := ollama.TemplateData{
@@ -204,18 +211,17 @@ func (ct *CodeCheckTask) exec(oc *ollama.OllamaClient) {
 		filePayload.Prompt, err = ollama.RenderPrompt(ct.Prompt, data)
 		if err != nil {
 			fmt.Printf("failed to render, diff:%s, err:%v", diff, err)
-			return
+			continue
 		}
 		response, err := oc.Generate(&filePayload)
 		if err != nil {
 			fmt.Printf("code check failed, diff:%s,err:%v\n", diff, err)
 		} else {
-			resultFile := ct.getResultFileByDiffFile(diff)
-			response = ct.processResponse(diff, response)
-			util.WriteContentToFile(response, resultFile)
+			result = result + ct.processResponse(diff, response) + "\n\n"
 			fmt.Printf("code check success, diff:%s\n", diff)
 		}
 	}
+	util.WriteContentToFile(result, resultFile)
 }
 
 func (ct *CodeCheckTask) Do(oc *ollama.OllamaClient) {
