@@ -76,5 +76,5 @@ func (oc *OllamaClient) Generate(payload *GeneratePayload) (string, error) {
 }
 
 func (oc *OllamaClient) Run(task ITask) {
-	task.Do(oc)
+	go task.Do(oc)
 }

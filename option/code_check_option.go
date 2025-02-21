@@ -10,4 +10,6 @@ type CodeCheckOption struct {
 	OutDir      string `yaml:"OutDir"`
 	OutPrefix   string `yaml:"OutPrefix"`
 	Prompt      string `yaml:"Prompt"`
+	CronTime    string `yaml:"CronTime"`
+	UploadURL   string `yaml:"UploadURL"`
 }

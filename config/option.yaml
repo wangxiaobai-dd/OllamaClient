@@ -24,6 +24,8 @@ CodeCheck:
   DiffDir: "."
   OutDir: "D:\\OllamaClient\\output\\"
   OutPrefix: "ai_result"
+  CronTime: "10 30 14 * * *"  # (sec min hour * * *) 14:30:10
+  UploadURL: "http://127.0.0.1:9100/upload"
 
   Prompt: |
     "

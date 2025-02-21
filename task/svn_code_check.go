@@ -13,10 +13,10 @@ import (
 	"sync"
 	"time"
 
-	"OllamaChat/util"
-
 	"OllamaChat/Ollama"
 	"OllamaChat/Option"
+	"OllamaChat/util"
+	cron "github.com/robfig/cron/v3"
 )
 
 type CodeCheckTask struct {
@@ -200,7 +200,7 @@ func (ct *CodeCheckTask) prepare() {
 func (ct *CodeCheckTask) finish() {
 	for _, file := range ct.diffFiles {
 		if err := os.Remove(file); err != nil {
-			fmt.Printf("failed to delete file %s: %v", file, err)
+			log.Printf("failed to delete file %s: %v", file, err)
 		}
 	}
 }
@@ -212,7 +212,7 @@ func (ct *CodeCheckTask) exec(oc *ollama.OllamaClient) {
 	for _, diff := range ct.diffFiles {
 		content, err := os.ReadFile(diff)
 		if err != nil {
-			fmt.Printf("failed to read file, diff:%s, err:%v", diff, err)
+			log.Printf("failed to read file, diff:%s, err:%v", diff, err)
 			continue
 		}
 		filePayload := *payload
@@ -221,22 +221,42 @@ func (ct *CodeCheckTask) exec(oc *ollama.OllamaClient) {
 		}
 		filePayload.Prompt, err = ollama.RenderPrompt(ct.Prompt, data)
 		if err != nil {
-			fmt.Printf("failed to render, diff:%s, err:%v", diff, err)
+			log.Printf("failed to render, diff:%s, err:%v", diff, err)
 			continue
 		}
 		response, err := oc.Generate(&filePayload)
 		if err != nil {
-			fmt.Printf("code check failed, diff:%s,err:%v\n", diff, err)
+			log.Printf("code check failed, diff:%s,err:%v\n", diff, err)
 		} else {
 			result = result + ct.processResponse(diff, response) + "\n\n"
-			fmt.Printf("code check success, diff:%s\n", diff)
+			log.Printf("code check success, diff:%s\n", diff)
 		}
 	}
 	util.WriteContentToFile(result, resultFile)
+	if ct.UploadURL != "" {
+		err := util.UploadFile(ct.UploadURL, resultFile)
+		if err != nil {
+			log.Printf("failed to upload file, err:%v", err)
+		}
+	}
 }
 
 func (ct *CodeCheckTask) Do(oc *ollama.OllamaClient) {
-	ct.prepare()
-	ct.exec(oc)
-	ct.finish()
+	if ct.CronTime != "" {
+		c := cron.New(cron.WithSeconds())
+		_, err := c.AddFunc(ct.CronTime, func() {
+			log.Println("cron check code task exec")
+			ct.prepare()
+			ct.exec(oc)
+			ct.finish()
+		})
+		if err != nil {
+			log.Printf("failed to add cron job: %v", err)
+		}
+		c.Start()
+	} else {
+		ct.prepare()
+		ct.exec(oc)
+		ct.finish()
+	}
 }
