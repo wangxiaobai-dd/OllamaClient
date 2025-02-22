@@ -15,10 +15,10 @@ Ollama:
 
 CodeCheck:
   CheckDay: -4 # -1:yesterday 1:today
-  ProjectPath: "D:\\testollama"
-  RepoURL: "http://zt-c600540.ztgame.com/svn/testollama/"
-  #ProjectPath: "C:\\Users\\Meepo\\Desktop\\test"
-  #RepoURL: "https://desktop-ljl2un9/svn/test/"
+  #ProjectPath: "D:\\testollama"
+  #RepoURL: "http://zt-c600540.ztgame.com/svn/testollama/"
+  ProjectPath: "C:\\Users\\Meepo\\Desktop\\test"
+  RepoURL: "https://desktop-ljl2un9/svn/test/"
   UserName: "test"
   Password: "test"
   DiffDir: "."

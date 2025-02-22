@@ -1,9 +1,9 @@
 package main
 
 import (
-	"OllamaChat/Ollama"
-	"OllamaChat/Option"
-	"OllamaChat/Task"
+	"OllamaClient/Ollama"
+	"OllamaClient/Option"
+	"OllamaClient/Task"
 	"log"
 )
 

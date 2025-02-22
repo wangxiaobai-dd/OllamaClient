@@ -13,10 +13,10 @@ import (
 	"sync"
 	"time"
 
-	"OllamaChat/util"
+	"OllamaClient/util"
 
-	"OllamaChat/Ollama"
-	"OllamaChat/Option"
+	"OllamaClient/Ollama"
+	"OllamaClient/Option"
 )
 
 type CodeCheckTask struct {
