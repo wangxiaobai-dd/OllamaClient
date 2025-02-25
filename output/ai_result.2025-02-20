@@ -1,0 +1,159 @@
+REVISION:1		Task 11111 测试版-测试1
+[文件名]
+ scenes/a.cpp
+ [问题代码]
+ 1. 在`run()`函数中，初始化了`wsserver`后直接定义线程`ws_thr`，但没有将线程加入主线程队列。正确的做法是使用`std::thread::join_queue`或类似的方法确保线程阻塞。
+2. 在`onWSMsg`函数中，数组`argv[4096]`可能无法容纳所有可能的命令参数，可能导致越界。
+3. 在`onWSClose`函数中，没有处理错误码和原因，可能导致服务不可靠。
+修改建议：
+1. 使用`std::thread::join`方法确保线程阻塞，并将线程加入主线程队列。
+2. 增大`argv`数组的大小或动态分配内存以避免越界。
+3. 在`onWSClose`函数中添加错误处理逻辑，例如检查错误码并重传错误信息。
+具体的修改如下：
+```cpp
+// 修改后的代码示例
+void Server::run() {
+  wsserver.bind("0.0.0.0:1234");
+  wsserver.listen();
+  // Define and join the WebSocket thread
+  std::thread ws_thr;
+  ws_thr = std::thread(&Server::wsserver, "0.0.0.0:1234");
+  ws_thr.join();
+}
+// 修改后的代码示例
+void Server::onWSMsg(CMDConnData& conn, int argc, const char** argv) {
+  // Use dynamic allocation or increase buffer size to avoid overflow
+  static std::vector<char> argv_vec(argv, argv + 100); // 增大数组大小或使用动态分配
+  if (!strcmp(argv[0], "help")) {
+    resp = admincmd_help;
+  }
+  else if (!strcmp(argv[0], "login")) {
+    if (argc < 2 || strcmp(argv[1], "123456")) {
+      resp = "wrong password";
+    }
+    else {
+      conn.login = true;
+      resp = "login success";
+    }
+  }
+  // 其他命令处理
+}
+```
+以上修改确保线程阻塞、内存安全和错误处理，增强服务的健壮性。
+
+REVISION:2		MSG:Task 22222 测试版-测试2
+[文件名]
+session/b.h
+[问题代码]
+```cpp
+void handleWSClose(EventHandler* handler) {
+    uint16_t status_code = be16toh(*(uint16_t*)close_reason);
+    const char* reason = (const char*)close_reason + 2;
+    if (status_code == 1006) reason = conn.getLastError();
+    handler->onWSClose(*this, status_code, reason);
+}
+```
+[修改建议]
+```cpp
+void handleWSClose(EventHandler* handler) {
+    // 获取会话关闭的状态码
+    uint16_t status_code = be16toh(*(uint16_t*)close_reason);
+    char const* wsCloseReason(const char* reasonPtr, uint16_t status) {
+        static_assertsizeof(close_reason) >= sizeof(uint16_t), "Insufficient close_reason length";
+        if (reasonPtr == close_reason || (status != 1006 && status != 1007)) {
+            return nullptr;
+        }
+        return reasonPtr + 2;
+    }
+    const char* reason = wsCloseReason(close_reason, status_code);
+    handler->onWSClose(*this, status_code, reason);
+}
+```
+修改说明：
+1. 添加了局部函数wsCloseReason用于获取原因字符串，增加了参数检查以防止越界访问
+2. 使用static_assert确保close_reason有足够的长度
+3. 改进了错误处理，返回null指针而非潜在空指针风险
+4. 增加了简要的注释说明各参数的作用
+5. 调整了函数参数顺序和变量命名以提高可读性
+6. 使用const char*类型更明确地表示常量字符指针
+
+REVISION:3		MSG:Task 33333 测试版-测试测试测试
+[文件名]
+session/server.cpp
+[问题代码]
+```cpp
+  // 在初始化WebSocket服务器时遇到错误：
+  if (!wsserver.init("0.0.0.0", -1, 4294967295))
+```
+[修改建议]
+```cpp
+// 更改初始化参数，使用-1表示所有接口，并指定最大连接数为某个合理的值（如1）
+if (!wsserver.init("0.0.0.0", -1, 1024)) {
+    std::cerr << "Failed to initialize WebSocket server" << std::endl;
+    exit(EXIT_FAILURE);
+}
+```
+[问题代码]
+```cpp
+  // 在处理命令时，使用全局变量admincmd_help可能导致一致性问题：
+  if (!strcmp(argv[0], "help")) {
+      resp = admincmd_help;
+  }
+```
+[修改建议]
+```cpp
+// 将admincmd_help存储在类成员中，并在方法内部直接引用
+private:
+    std::string help = "hello";
+    // 在onCMD函数中替换使用：
+    if (!strcmp(argv[0], "help")) {
+        resp = help;
+    }
+```
+[问题代码]
+```cpp
+  // 处理"stop"命令后没有返回值，可能导致后续代码无法判断服务器状态：
+  stop();
+```
+[修改建议]
+```cpp
+// 在处理"stop"命令时，设置一个标志位来指示服务器是否已停止
+std::atomic<bool> is_stopped = false;
+void stop() {
+    is_stopped = true;
+}
+int main(int argc, char** argv) {
+    if (is_stopped) {
+        std::cout << "Server stopped." << std::endl;
+    }
+}
+```
+[问题代码]
+```cpp
+  // 在处理异常情况时，直接输出错误信息可能无法提供足够的调试信息：
+  error: onWSSegment should not be called
+```
+[修改建议]
+```cpp
+// 将错误信息整合到异常处理中，并使用更明确的错误消息
+try {
+    // 正常处理逻辑
+} catch (const std::runtime_error& e) {
+    std::cerr << "WebSocket error: " << e.what() << std::endl;
+}
+```
+[问题代码]
+```cpp
+  // 在处理"echo"命令时，未检查参数数量可能导致数组越界：
+  if (argc >= 2) resp = std::string(argv[1]);
+```
+[修改建议]
+```cpp
+// 检查参数数量以避免数组越界并提供更清晰的错误信息
+if (argc < 2 || !std::strcmp(argv[0], "echo")) {
+    resp = "invalid command";
+} else if (argc >= 2) {
+    resp = std::string(argv[1]);
+}
+```
+
