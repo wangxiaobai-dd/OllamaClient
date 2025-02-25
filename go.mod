@@ -1,4 +1,4 @@
-module OllamaChat
+module OllamaClient
 
 go 1.22
 
