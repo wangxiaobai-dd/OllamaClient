@@ -13,9 +13,9 @@ import (
 	"sync"
 	"time"
 
-	"OllamaChat/Ollama"
-	"OllamaChat/Option"
-	"OllamaChat/util"
+	"OllamaClient/ollama"
+	"OllamaClient/option"
+	"OllamaClient/util"
 	cron "github.com/robfig/cron/v3"
 )
 

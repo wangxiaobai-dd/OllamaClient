@@ -1,10 +1,15 @@
 package main
 
 import (
-	"OllamaChat/Ollama"
-	"OllamaChat/Option"
-	"OllamaChat/Task"
 	"log"
+	"os"
+	"os/signal"
+	"syscall"
+
+	"OllamaClient/ollama"
+	"OllamaClient/option"
+	"OllamaClient/task"
+	"github.com/spf13/pflag"
 )
 
 func init() {
@@ -12,7 +17,9 @@ func init() {
 }
 
 func main() {
-	opt, err := option.LoadOption("config/option.yaml")
+	optionFile := pflag.StringP("option", "o", "config/option.yaml", "Path to the yaml configuration file")
+	pflag.Parse()
+	opt, err := option.LoadOption(*optionFile)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -21,4 +28,8 @@ func main() {
 	client := ollama.NewOllamaClient(opt.Ollama)
 	ct := task.NewCodeCheckTask(opt.CodeCheck)
 	client.Run(ct)
+
+	c := make(chan os.Signal, 1)
+	signal.Notify(c, os.Interrupt, os.Kill, syscall.SIGTERM)
+	<-c
 }

@@ -9,7 +9,7 @@ import (
 	"os"
 	"time"
 
-	"OllamaClient/Option"
+	"OllamaClient/option"
 )
 
 type OllamaClient struct {
